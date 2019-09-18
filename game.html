@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charaset="UTF-8">
+    <link rel="icon" href="icons/janken.png">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" href="game.css" type="text/css">
+    <title>Online Janken Game</title>
+
+</head>
+
+<body>
+
+<section id="login">
+    <div class="a-button" id = "enter-gameroom">
+        <input type="image" id="enterButton" value="入室する" src="icons/enter.png">
+    </div>
+    <div class="b-button" id = "no-enter-gameroom">
+        <input type="image" id="noEnterButton" value="ただいま入室できません" src="icons/enter-disable.png" disabled>
+    </div>
+</section>
+
+<section id="game" hidden>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-sm-12 col-md-8 col-lg-8">
+                <div class="startGame">
+                    <div class="row">
+                        <input type="image" id="main" onclick="startGame()" src="icons/not-enough.png" disabled>
+                    </div>
+                    <div class="afterGame">
+                        <input type="image" id="play_janken_again" onclick="playAgain()" src="icons/game_play_again.png">
+                        <input type="image" id="finish_janken_game" onclick="finishGame()" src="icons/game_finish.png">
+                    </div>
+                </div>
+                <div class="role">
+                    <div class="row">
+                        <input type="image" id="rock" onclick="selectLocalRole(1)" src="icons/rock.png" disabled>
+                        <input type="image" id="scissors" onclick="selectLocalRole(2)" src="icons/scissors.png" disabled>
+                        <input type="image" id="paper" onclick="selectLocalRole(3)" src="icons/paper.png" disabled>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-sm-12 col-md-4 col-lg-4">
+                <div class="remote1" id="remote_video1_class">
+                    <div class="row" id="remote_video1" style="width:300px;height:225px;display:inline-block;background-color:#999999"></div>
+                    <div class="remote_mute_status1">
+                        <img id="video_mute_status1"><br>
+                        <img id="mic_mute_status1">
+                    </div>
+                    <div class="remote_role1_class"><img id="remote_role1"></div>
+                    <div class="remote_client1_status"><img id="remote_client1_status" ></div>
+                </div>
+                <!-- <div class="row"><img id="remote_client1_status" ></div> -->
+                
+                <div class="remote2" id="remote_video2_class">
+                    <div class="row" id="remote_video2" style="width:300px;height:225px;display:inline-block;background-color:#999999"></div>
+                    <div class="remote_mute_status2">
+                            <img id="video_mute_status2"><br>
+                            <img id="mic_mute_status2">
+                    </div>
+                    <div class="remote_role2_class"><img id="remote_role2"></div>
+                    <div class="remote_client2_status"><img id="remote_client2_status" ></div>
+                </div>
+                <div class="row"><img id="remote_client2_status"></div>
+                
+                <div class="local" id="local_video_class">
+                    <div class="row" id="local_video" style="width:300px;height:225px;display:inline-block;background-color:#999999"></div>
+                    <div class="local_role_class"><img id="local_role"></div>
+                    <div class="local_client_status"><img id="local_client_status" ></div>
+                </div>
+                <!-- <div class="row"><img id="local_client_status"></div> -->
+
+                <div class="row">
+                    <div class="muteButton">
+                        <input type="image" id="camera" onclick="cameraButton()" src="icons/camera_on.png" >
+                        <input type="image" id="mic" onclick="micButton()" src="icons/mic_on.png" >
+                        <input type="image" id="speaker" onclick="speakerButton()" src="icons/speaker_on.png" >
+                    </div>    
+                </div>
+            </div>
+        </div>
+    </div>
+
+<!-- <div class="afterGame">
+    <div class="row"> -->
+        
+    <!-- </div>
+    <div class="row"> -->
+        
+    <!-- </div>
+</div> -->
+
+<!-- <button type="button" class="btn btn-success" onclick="startVideoCall()">入室する</button> -->
+
+</section>
+
+<script src="libs/AgoraRTCSDK-2.8.0.js"></script>
+<script src="libs/agora-rtm-sdk-0.9.1.js"></script>
+<script src="libs/AgoraRTM-JankenGame.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script language="javascript">
+//enterButton status is display,noEnterButton is not display
+document.getElementById('enter-gameroom').style.display ="block";
+document.getElementById('no-enter-gameroom').style.display ="none";
+document.getElementById("play_janken_again").style.display = "none";
+document.getElementById("finish_janken_game").style.display = "none";
+
+//クライアント作成
+var videoClient = AgoraRTC.createClient({mode: 'live', codec: "h264"});
+
+function startVideoCall(){
+    addVideoDOM();
+    //クライアント初期化
+    videoClient.init(agoraRTCappId, function () {
+        console.log("AgoraRTC client initialized, uid is " + uid);
+
+        //チャネル参加
+        videoClient.join(channelKey,channel, agoraRTMaccountName, function(uid) {
+            console.log("videoClient " + uid + " join channel successfully");
+
+            //ストリーム作成
+            localStream = AgoraRTC.createStream({
+            streamID: uid,
+            audio: true,
+            video: true,
+            screen: false}
+            );
+
+            //ストリーム初期化
+                localStream.init(function() {
+                    console.log("getUserMedia successfully");
+                    localStream.play('local_video');
+
+                    //ローカルストリーム送信
+                    videoClient.publish(localStream, function (err) {
+                        console.log("Publish local stream error: " + err);
+                    });
+                    videoClient.on('stream-published', function (evt) {
+                        console.log("Publish local stream successfully");
+                    });                    
+                }, function (err) {
+                    console.log("getUserMedia failed", err);
+                    if(window.confirm("カメラやマイクをつなぎなおしてOKを押してください")){
+                        $.when(
+                            leaveVideoCall(),
+                            addVideoDOM(),
+                            // alert("leave"),
+                        ).done(function(){
+                            reStartVideoCall();
+                            // alert("restart");
+                        });
+                    }else{
+                        window.alert('キャンセルされました');
+                    }
+                });
+        }, function(err) {
+            console.log("Join channel failed", err);
+        });
+    },function (err) {
+        console.log("AgoraRTC client init failed", err);
+    });
+};
+
+//リモートストリーム受信
+videoClient.on('stream-added', function (evt) {
+    stream = evt.stream;
+    console.log("New stream added: " + stream.getId());
+        videoClient.subscribe(stream, function (err) {
+            console.log("Subscribe stream failed", err);
+        });
+    });
+
+videoClient.on('stream-subscribed', function (evt) {
+    stream = evt.stream;
+    uid = evt.uid;
+    console.log("Subscribe remote stream successfully: " + stream.getId());
+    if(remoteVideo1 == null){
+        remote = 1;
+        remoteStream1 = stream;
+        remoteStream1.play("remote_video1");
+        remoteVideo1 = stream.getId();
+        console.log("remoteVideo1 is " + remoteVideo1);
+        videoId1 = "video_mute_status1:" + remoteVideo1;
+        micId1 = "mic_mute_status1:" + remoteVideo1;
+        document.getElementById("video_mute_status1").id = "video_mute_status1:" + remoteVideo1;
+        document.getElementById("mic_mute_status1").id = "mic_mute_status1:" + remoteVideo1;
+    }else{
+        remote = 2;
+        remoteStream2 = stream;
+        remoteStream2.play("remote_video2");
+        remoteVideo2 = stream.getId();
+        console.log("remoteVideo2 is " + remoteVideo2);
+        videoId2 = "video_mute_status2:" + remoteVideo2;
+        micId2 = "mic_mute_status2:" + remoteVideo2;
+        document.getElementById("video_mute_status2").id = "video_mute_status2:" + remoteVideo2;
+        document.getElementById("mic_mute_status2").id = "mic_mute_status2:" + remoteVideo2;
+    }
+});
+
+//Leave the Channel
+function leaveVideoCall(){
+    localStream.stop(function(){
+        console.log("Local stream stopped");
+    }, function(err){
+        console.log("Fail Local stream stopped");
+    });
+    videoClient.unpublish(localStream, function(err) {
+        console.log(err);
+    })
+    videoClient.on("stream-removed", function(evt) {
+        stream = evt.stream;
+        console.log("remote stream was removed", stream.getId());
+    });
+    videoClient.on("peer-leave", function(evt) {
+        uid = evt.uid;
+        console.log("remote user left ", uid);
+    });
+    videoClient.leave(function () {
+        console.log("remote : " + remote);
+        //遠隔拠点2の変数/ID初期化
+        if (remote == 2) {
+            document.getElementById(videoId2).src = "";
+            document.getElementById(micId2).src = "";
+            document.getElementById(videoId2).id = "video_mute_status2";
+            document.getElementById(micId2).id = "mic_mute_status2";
+            remoteVideo2 = null;
+            videoId2 = null;
+            micId2 = null;
+            micIdCheck2 = null;
+        }
+
+        document.getElementById(videoId1).src = "";
+        document.getElementById(micId1).src = "";
+        document.getElementById("camera").src = "icons/camera_on.png";
+        document.getElementById("mic").src = "icons/mic_on.png";
+        document.getElementById("speaker").src = "icons/speaker_on.png";
+        document.getElementById(videoId1).id = "video_mute_status1";
+        document.getElementById(micId1).id = "mic_mute_status1";
+        remoteVideo1 = null;
+        remote = null;
+        stream = null;
+        localStream = null;
+        remoteStream1 = null;
+        videoId1 = null;
+        micId1 = null;
+        micIdCheck1 = null;
+        videoMute = false;
+        micMute = false;
+        speakerMute = false;
+
+        $("#remote_video1").remove();
+        $("#remote_video2").remove();
+        $("#local_video").remove();
+
+        console.log("Leave channel successfully");
+    }, function (err) {
+        console.log("Leave channel failed");
+    });
+}
+
+//ビデオミュート取得＆表示機能
+videoClient.on("mute-video", function (evt) {
+    uid = evt.uid;
+    videoIdCheck1 = videoId1 + " ";
+    videoIdCheck2 = videoId2 + " ";
+    if (videoIdCheck1.indexOf(uid + " ") !== -1) {
+        document.getElementById(videoId1).src="icons/camera_off.png";
+        // alert("remote1 video off");
+    }else if(videoIdCheck2.indexOf(uid + " ") !== -1){
+        document.getElementById(videoId2).src="icons/camera_off.png";
+        // alert("remote2 video off");
+    }
+})
+
+videoClient.on("unmute-video", function (evt) {
+    uid = evt.uid;
+    if (videoIdCheck1.indexOf(uid + " ") !== -1) {
+        document.getElementById(videoId1).src="";
+    }else if(videoIdCheck2.indexOf(uid + " ") !== -1){
+        document.getElementById(videoId2).src="";
+    }
+})
+
+//マイクミュート取得＆表示機能
+videoClient.on("mute-audio", function(evt) {
+    uid = evt.uid;
+    micIdCheck1= micId1 + " ";
+    micIdCheck2= micId2 + " ";
+    if (micIdCheck1.indexOf(uid + " ") !== -1) {
+        document.getElementById(micId1).src="icons/mic_off.png";
+    }else if(micIdCheck2.indexOf(uid + " ") !== -1){
+        document.getElementById(micId2).src="icons/mic_off.png";
+    }
+});
+
+videoClient.on("unmute-audio", function (evt) {
+    uid = evt.uid;
+    if (micIdCheck1.indexOf(uid + " ") !== -1) {
+        document.getElementById(micId1).src="";
+    }else if(micIdCheck2.indexOf(uid + " ") !== -1){
+        document.getElementById(micId2).src="";
+    }
+});
+
+//ビデオミュート
+function cameraButton(){
+    if(videoMute == false){
+        videoMute = true;
+        localStream.muteVideo();
+        document.getElementById("camera").src="icons/camera_off.png";
+    }else if(videoMute == true){
+        videoMute = false;
+        localStream.unmuteVideo();
+        document.getElementById("camera").src="icons/camera_on.png";
+    }
+}
+//マイクミュート
+function micButton(){
+    if(micMute == false){
+        micMute = true;
+        localStream.muteAudio();
+        document.getElementById("mic").src="icons/mic_off.png";
+    }else if(micMute == true){
+        micMute = false;
+        localStream.unmuteAudio();
+        document.getElementById("mic").src="icons/mic_on.png";
+    }
+}
+//スピーカーミュート
+function speakerButton(){
+    if(speakerMute == false){
+        speakerMute = true;
+        if(remote == 1){
+            remoteStream1.setAudioVolume(0);
+        }else if(remote == 2){
+            remoteStream1.setAudioVolume(0);
+            remoteStream2.setAudioVolume(0);
+        }
+        document.getElementById("speaker").src="icons/speaker_off.png";
+        console.log("Muted speaker stream with id " + stream.getId());
+    }else if(speakerMute == true){
+        speakerMute = false;
+        if(remote == 1){
+            remoteStream1.setAudioVolume(50);
+        }else if(remote == 2){
+            remoteStream1.setAudioVolume(50);
+            remoteStream2.setAudioVolume(50);
+        }
+        document.getElementById("speaker").src="icons/speaker_on.png";
+        console.log("Unmuted speaker stream with id "+ stream.getId());
+    }
+}
+
+//映像要素追加
+function addVideoDOM(){
+    if (!($("#remote_video1").length)) {
+        $('div#remote_video1_class').prepend('<div class="row"  id="remote_video1"style="width:300px;height:225px;display:inline-block;background-color:#999999"></div>');
+    }
+
+    if (!($("#remote_video2").length)) {
+        $('div#remote_video2_class').prepend('<div class="row"  id="remote_video2"style="width:300px;height:225px;display:inline-block;background-color:#999999"></div>');
+    }
+
+    if (!($("#local_video").length)) {
+        $('div#local_video_class').prepend('<div class="row"  id="local_video"style="width:300px;height:225px;display:inline-block;background-color:#999999"></div>');
+    }
+}
+
+
+function reStartVideoChall(){
+    startVideoCall()
+}
+
+</script>
+</body>
+</html>

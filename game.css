@@ -1,0 +1,85 @@
+.startGame{
+    position: relative;
+    top: 30;
+    left: 70px;
+}
+.role{
+    position: relative;
+    top: 0;
+    left: 325px;
+}
+
+.remote1 {
+    position: relative;
+    top: 0;
+    left: -40px;
+    /* width:300px;
+    height:225px;
+    display:inline-block;
+    background-color:#999999 */
+}
+.remote_mute_status1{
+    position: absolute;
+    top: 0;
+    left: 210px;
+}
+.remote_role1_class{
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+.remote_client1_status{
+    position: relative;
+    top: 0;
+    left: -10px; 
+}
+
+.remote2 {
+    position: relative;
+    top: 0;
+    left: -40px;
+    /* width:300px;
+    height:225px;
+    display:inline-block;
+    background-color:#999999 */
+}
+.remote_mute_status2{
+    position: absolute;
+    top: 0;
+    left: 210px;
+}
+.remote_role2_class{
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+.remote_client2_status{
+    position: relative;
+    top: 0;
+    left: -10px; 
+}
+
+.local{
+    position: relative;
+    top: 0;
+    left: -40px;
+    /* width:300px;
+    height:225px;
+    display:inline-block;
+    background-color:#999999 */
+}
+.local_role_class{
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+.local_client_status{
+    position: relative;
+    top: 0;
+    left: -10px; 
+}
+.muteButton{
+    position: relative;
+    top: 0;
+    left: 12px;
+}
